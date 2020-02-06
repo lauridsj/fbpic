@@ -6,6 +6,7 @@ This file is part of the Fourier-Bessel Particle-In-Cell code (FB-PIC)
 It defines a set of generic functions that operate on a GPU.
 """
 from numba import cuda
+import cupy
 
 @cuda.jit
 def copy_vec_to_gpu_buffer( vec_buffer_l, vec_buffer_r,
@@ -482,7 +483,7 @@ def add_scal_from_gpu_buffer( scal_buffer_l, scal_buffer_r, grid, m,
 # CUDA damping kernels:
 # --------------------
 @cuda.jit
-def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
+def cuda_damp_EB_left_old( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
     """
     Multiply the E and B fields in the left guard cells
     by damp_array.
@@ -519,6 +520,23 @@ def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
             Br[iz, ir] *= damp_factor_left
             Bt[iz, ir] *= damp_factor_left
             Bz[iz, ir] *= damp_factor_left
+
+# Actual kernel - a simple scalar operation
+@cupy.fuse()
+def cuda_damp_EB_left_fuse( Er, Et, Ez, Br, Bt, Bz, damp_array ):
+    
+    Er *= damp_array
+    Et *= damp_array
+    Ez *= damp_array
+    Br *= damp_array
+    Bt *= damp_array
+    Bz *= damp_array
+    
+# The slicing of the field happens in a helper method using cupy.newaxis
+def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
+    
+    cuda_damp_EB_left_fuse(Er[:nd,:], Et[:nd,:], Ez[:nd,:],
+        Br[:nd,:], Bt[:nd,:], Bz[:nd,:], damp_array[:nd,cupy.newaxis] )
 
 @cuda.jit
 def cuda_damp_EB_left_pml( Er_pml, Et_pml, Br_pml, Bt_pml, damp_array, nd ):
