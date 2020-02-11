@@ -885,7 +885,7 @@ class BoundaryCommunicator(object):
                     dim_grid, dim_block = cuda_tpb_bpg_2d(
                         nd, interp[0].Nr )
                     for m in range(len(interp)):
-                        cuda_damp_EB_right[dim_grid, dim_block](
+                        cuda_damp_EB_right(
                             interp[m].Er, interp[m].Et, interp[m].Ez,
                             interp[m].Br, interp[m].Bt, interp[m].Bz,
                             self.d_right_damp, nd)
