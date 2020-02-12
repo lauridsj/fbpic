@@ -10,6 +10,7 @@ from fbpic.utils.threading import njit_parallel, prange
 from fbpic.utils.cuda import cuda_installed
 if cuda_installed:
     from fbpic.utils.cuda import cuda, cuda_tpb_bpg_2d
+    import cupy
 
 class MovingWindow(object):
     """
@@ -160,26 +161,23 @@ class MovingWindow(object):
         """
         if grid.use_cuda:
             shift = grid.d_field_shift
-            # Get a 2D CUDA grid of the size of the grid
-            tpb, bpg = cuda_tpb_bpg_2d( grid.Ep.shape[0], grid.Ep.shape[1] )
+
             # Shift all the fields on the GPU
-            shift_spect_array_gpu[tpb, bpg]( grid.Ep, shift, n_move )
-            shift_spect_array_gpu[tpb, bpg]( grid.Em, shift, n_move )
-            shift_spect_array_gpu[tpb, bpg]( grid.Ez, shift, n_move )
-            shift_spect_array_gpu[tpb, bpg]( grid.Bp, shift, n_move )
-            shift_spect_array_gpu[tpb, bpg]( grid.Bm, shift, n_move )
-            shift_spect_array_gpu[tpb, bpg]( grid.Bz, shift, n_move )
+            power_shift = cupy.power(shift, n_move)[:,cupy.newaxis]
+            
+            shift_spect_EB_gpu_fuse( grid.Ep, grid.Em, grid.Ez, grid.Bp, 
+                grid.Bm, grid.Bz, power_shift )
+            
             if grid.use_pml:
-                shift_spect_array_gpu[tpb, bpg]( grid.Ep_pml, shift, n_move )
-                shift_spect_array_gpu[tpb, bpg]( grid.Em_pml, shift, n_move )
-                shift_spect_array_gpu[tpb, bpg]( grid.Bp_pml, shift, n_move )
-                shift_spect_array_gpu[tpb, bpg]( grid.Bm_pml, shift, n_move )
+                shift_spect_EB_pml_gpu_fuse( grid.Ep_pml, grid.Em_pml,
+                grid.Bp_pml, grid.Bm_pml, power_shift )
+            
             if shift_rho:
-                shift_spect_array_gpu[tpb, bpg]( grid.rho_prev, shift, n_move )
+                shift_spect_rho_gpu_fuse( grid.rho_prev, power_shift )
+
             if shift_currents:
-                shift_spect_array_gpu[tpb, bpg]( grid.Jp, shift, n_move )
-                shift_spect_array_gpu[tpb, bpg]( grid.Jm, shift, n_move )
-                shift_spect_array_gpu[tpb, bpg]( grid.Jz, shift, n_move )
+                shift_spect_J_gpu_fuse( grid.Jp, grid.Jm, grid.Jz, power_shift )
+            
         else:
             shift = grid.field_shift
             # Shift all the fields on the CPU
@@ -241,7 +239,7 @@ def shift_spect_array_cpu( field_array, shift_factor, n_move ):
 if cuda_installed:
 
     @cuda.jit
-    def shift_spect_array_gpu( field_array, shift_factor, n_move ):
+    def shift_spect_array_gpu_old( field_array, shift_factor, n_move ):
         """
         Shift the field 'field_array' by n_move cells on the GPU.
         This is done in spectral space and corresponds to multiplying the
@@ -275,4 +273,34 @@ if cuda_installed:
             if n_move < 0:
                 power_shift = power_shift.conjugate()
             # Shift fields
-            field_array[iz, ir] *= power_shift
+            field_array[iz, ir] *= power_shift       
+        
+    @cupy.fuse()
+    def shift_spect_EB_gpu_fuse( Ep, Em, Ez, Bp, Bm, Bz, power_shift ):
+         
+        Ep *= power_shift
+        Em *= power_shift
+        Ez *= power_shift
+        Bp *= power_shift
+        Bm *= power_shift
+        Bz *= power_shift
+        
+    @cupy.fuse()
+    def shift_spect_EB_pml_gpu_fuse( Ep_pml, Em_pml, Bp_pml, Bm_pml, power_shift ):
+         
+        Ep_pml *= power_shift
+        Em_pml *= power_shift
+        Bp_pml *= power_shift
+        Bm_pml *= power_shift
+            
+    @cupy.fuse()
+    def shift_spect_rho_gpu_fuse( rho, power_shift ):
+        
+        rho *= power_shift
+        
+    @cupy.fuse()
+    def shift_spect_J_gpu_fuse( Jp, Jm, Jz, power_shift ):
+        
+        Jp *= power_shift
+        Jm *= power_shift
+        Jz *= power_shift

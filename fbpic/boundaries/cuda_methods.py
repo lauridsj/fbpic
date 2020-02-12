@@ -541,8 +541,7 @@ def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
 def cuda_damp_EB_right( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
     
     cuda_damp_EB_fuse(Er[-nd:,:], Et[-nd:,:], Ez[-nd:,:],
-        Br[-nd:,:], Bt[-nd:,:], Bz[-nd:,:], 
-        cupy.flip(damp_array[:nd,cupy.newaxis], axis=0) )
+        Br[-nd:,:], Bt[-nd:,:], Bz[-nd:,:], damp_array[nd::-1,cupy.newaxis] )
 
 @cuda.jit
 def cuda_damp_EB_left_pml( Er_pml, Et_pml, Br_pml, Bt_pml, damp_array, nd ):
