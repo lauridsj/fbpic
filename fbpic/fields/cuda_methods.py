@@ -6,6 +6,7 @@ This file is part of the Fourier-Bessel Particle-In-Cell code (FB-PIC)
 It defines the optimized fields methods that use cuda on a GPU
 """
 from numba import cuda
+import cupy
 from scipy.constants import c, epsilon_0, mu_0
 c2 = c**2
 
@@ -230,74 +231,117 @@ def cuda_correct_currents_crossdeposition_comoving(
             Jz[iz, ir] += 1.j * Dz * inv_kz
 
 
-@cuda.jit
+@cupy.fuse()
 def cuda_push_eb_standard( Ep, Em, Ez, Bp, Bm, Bz, Jp, Jm, Jz,
                        rho_prev, rho_next,
                        rho_prev_coef, rho_next_coef, j_coef,
-                       C, S_w, kr, kz, dt,
-                       use_true_rho, Nz, Nr) :
+                       C, S_w, kr, kz, dt) :
     """
     Push the fields over one timestep, using the standard psatd algorithm
 
     See the documentation of SpectralGrid.push_eb_with
     """
-    # Cuda 2D grid
-    iz, ir = cuda.grid(2)
+    Ep_old = Ep.copy()
+    Em_old = Em.copy()
+    Ez_old = Ez.copy()
 
-    # Push the fields
-    if (iz < Nz) and (ir < Nr) :
+    # Evaluation using div(E) and div(J)
+    divE = kr*( Ep - Em ) \
+        + 1.j*kz*Ez
+    divJ = kr*( Jp - Jm ) \
+        + 1.j*kz*Jz
 
-        # Save the electric fields, since it is needed for the B push
-        Ep_old = Ep[iz, ir]
-        Em_old = Em[iz, ir]
-        Ez_old = Ez[iz, ir]
+    rho_diff = (rho_next_coef - rho_prev_coef) \
+        * epsilon_0 * divE - rho_next_coef * dt * divJ
 
-        # Calculate useful auxiliary arrays
-        if use_true_rho:
-            # Evaluation using the rho projected on the grid
-            rho_diff = rho_next_coef[iz, ir] * rho_next[iz, ir] \
-                    - rho_prev_coef[iz, ir] * rho_prev[iz, ir]
-        else:
-            # Evaluation using div(E) and div(J)
-            divE = kr[iz, ir]*( Ep[iz, ir] - Em[iz, ir] ) \
-                + 1.j*kz[iz, ir]*Ez[iz, ir]
-            divJ = kr[iz, ir]*( Jp[iz, ir] - Jm[iz, ir] ) \
-                + 1.j*kz[iz, ir]*Jz[iz, ir]
+    # Push the E field
+    Ep *= C
+    Ep += 0.5*kr*rho_diff \
+        + c2*S_w*( -1.j*0.5*kr*Bz \
+        + kz*Bp - mu_0*Jp )
+    
+    Em *= C
+    Em += -0.5*kr*rho_diff \
+        + c2*S_w*( -1.j*0.5*kr*Bz \
+        - kz*Bm - mu_0*Jm )
+    
+    Ez *= C
+    Ez += -1.j*kz*rho_diff \
+        + c2*S_w*( 1.j*kr*Bp \
+        + 1.j*kr*Bm - mu_0*Jz )
 
-            rho_diff = (rho_next_coef[iz, ir] - rho_prev_coef[iz, ir]) \
-              * epsilon_0 * divE - rho_next_coef[iz, ir] * dt * divJ
+    # Push the B field
+    Bp *= C
+    Bp += - S_w*( -1.j*0.5*kr*Ez_old \
+                    + kz*Ep_old ) \
+        + j_coef*( -1.j*0.5*kr*Jz \
+                    + kz*Jp )
 
-        # Push the E field
-        Ep[iz, ir] = C[iz, ir]*Ep[iz, ir] + 0.5*kr[iz, ir]*rho_diff \
-            + c2*S_w[iz, ir]*( -1.j*0.5*kr[iz, ir]*Bz[iz, ir] \
-            + kz[iz, ir]*Bp[iz, ir] - mu_0*Jp[iz, ir] )
+    Bm *= C
+    Bm += - S_w*( -1.j*0.5*kr*Ez_old \
+                    - kz*Em_old ) \
+        + j_coef*( -1.j*0.5*kr*Jz \
+                    - kz*Jm )
 
-        Em[iz, ir] = C[iz, ir]*Em[iz, ir] - 0.5*kr[iz, ir]*rho_diff \
-            + c2*S_w[iz, ir]*( -1.j*0.5*kr[iz, ir]*Bz[iz, ir] \
-            - kz[iz, ir]*Bm[iz, ir] - mu_0*Jm[iz, ir] )
+    Bz *= C
+    Bz += - S_w*( 1.j*kr*Ep_old \
+                    + 1.j*kr*Em_old ) \
+        + j_coef*( 1.j*kr*Jp \
+                    + 1.j*kr*Jm )
+    
+@cupy.fuse()
+def cuda_push_eb_standard_true_rho( Ep, Em, Ez, Bp, Bm, Bz, Jp, Jm, Jz,
+                       rho_prev, rho_next,
+                       rho_prev_coef, rho_next_coef, j_coef,
+                       C, S_w, kr, kz, dt) :
+    """
+    Push the fields over one timestep, using the standard psatd algorithm
 
-        Ez[iz, ir] = C[iz, ir]*Ez[iz, ir] - 1.j*kz[iz, ir]*rho_diff \
-            + c2*S_w[iz, ir]*( 1.j*kr[iz, ir]*Bp[iz, ir] \
-            + 1.j*kr[iz, ir]*Bm[iz, ir] - mu_0*Jz[iz, ir] )
+    See the documentation of SpectralGrid.push_eb_with
+    """
+    Ep_old = Ep.copy()
+    Em_old = Em.copy()
+    Ez_old = Ez.copy()
 
-        # Push the B field
-        Bp[iz, ir] = C[iz, ir]*Bp[iz, ir] \
-            - S_w[iz, ir]*( -1.j*0.5*kr[iz, ir]*Ez_old \
-                        + kz[iz, ir]*Ep_old ) \
-            + j_coef[iz, ir]*( -1.j*0.5*kr[iz, ir]*Jz[iz, ir] \
-                        + kz[iz, ir]*Jp[iz, ir] )
 
-        Bm[iz, ir] = C[iz, ir]*Bm[iz, ir] \
-            - S_w[iz, ir]*( -1.j*0.5*kr[iz, ir]*Ez_old \
-                        - kz[iz, ir]*Em_old ) \
-            + j_coef[iz, ir]*( -1.j*0.5*kr[iz, ir]*Jz[iz, ir] \
-                        - kz[iz, ir]*Jm[iz, ir] )
+    # Evaluation using the rho projected on the grid
+    rho_diff = rho_next_coef * rho_next \
+         - rho_prev_coef * rho_prev
+    
+    # Push the E field
+    Ep *= C
+    Ep += 0.5*kr*rho_diff \
+        + c2*S_w*( -1.j*0.5*kr*Bz \
+        + kz*Bp - mu_0*Jp )
+    
+    Em *= C
+    Em += -0.5*kr*rho_diff \
+        + c2*S_w*( -1.j*0.5*kr*Bz \
+        - kz*Bm - mu_0*Jm )
+    
+    Ez *= C
+    Ez += -1.j*kz*rho_diff \
+        + c2*S_w*( 1.j*kr*Bp \
+        + 1.j*kr*Bm - mu_0*Jz )
 
-        Bz[iz, ir] = C[iz, ir]*Bz[iz, ir] \
-            - S_w[iz, ir]*( 1.j*kr[iz, ir]*Ep_old \
-                        + 1.j*kr[iz, ir]*Em_old ) \
-            + j_coef[iz, ir]*( 1.j*kr[iz, ir]*Jp[iz, ir] \
-                        + 1.j*kr[iz, ir]*Jm[iz, ir] )
+    # Push the B field
+    Bp *= C
+    Bp += - S_w*( -1.j*0.5*kr*Ez_old \
+                    + kz*Ep_old ) \
+        + j_coef*( -1.j*0.5*kr*Jz \
+                    + kz*Jp )
+
+    Bm *= C
+    Bm += - S_w*( -1.j*0.5*kr*Ez_old \
+                    - kz*Em_old ) \
+        + j_coef*( -1.j*0.5*kr*Jz \
+                    - kz*Jm )
+
+    Bz *= C
+    Bz += - S_w*( 1.j*kr*Ep_old \
+                    + 1.j*kr*Em_old ) \
+        + j_coef*( 1.j*kr*Jp \
+                    + 1.j*kr*Jm )
 
 
 @cuda.jit
@@ -438,8 +482,8 @@ def cuda_push_eb_pml_comoving( Ep_pml, Em_pml, Bp_pml, Bm_pml,
             - T_eb[iz, ir]*S_w[iz, ir]*( -1.j*0.5*kr[iz, ir]*Ez[iz, ir] )
 
 
-@cuda.jit
-def cuda_push_rho( rho_prev, rho_next, Nz, Nr ) :
+@cupy.fuse()
+def cuda_push_rho( rho_prev, rho_next ) :
     """
     Transfer the values of rho_next to rho_prev,
     and set rho_next to zero
@@ -453,14 +497,8 @@ def cuda_push_rho( rho_prev, rho_next, Nz, Nr ) :
         Dimensions of the arrays
     """
 
-    # Cuda 2D grid
-    iz, ir = cuda.grid(2)
-
-    # Push the fields
-    if (iz < Nz) and (ir < Nr) :
-
-        rho_prev[iz, ir] = rho_next[iz, ir]
-        rho_next[iz, ir] = 0.
+    cupy.copyto(rho_prev, rho_next)
+    cupy.copyto(rho_next, 0. + 0.j)
 
 @cuda.jit
 def cuda_filter_scalar( field, Nz, Nr, filter_array_z, filter_array_r ) :

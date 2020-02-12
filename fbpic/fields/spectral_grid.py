@@ -26,7 +26,8 @@ if cuda_installed:
     cuda_correct_currents_curlfree_comoving, \
     cuda_correct_currents_crossdeposition_comoving, \
     cuda_filter_scalar, cuda_filter_vector, \
-    cuda_push_eb_standard, cuda_push_eb_comoving, \
+    cuda_push_eb_standard, cuda_push_eb_standard_true_rho, \
+    cuda_push_eb_comoving, \
     cuda_push_eb_pml_standard, cuda_push_eb_pml_comoving, \
     cuda_push_rho
 
@@ -348,12 +349,18 @@ class SpectralGrid(object) :
                         self.Ez, self.Bz, ps.d_C, ps.d_S_w,
                         self.d_kr, self.d_kz, self.Nz, self.Nr )
                 # Push the regular fields
-                cuda_push_eb_standard[dim_grid, dim_block](
-                    self.Ep, self.Em, self.Ez, self.Bp, self.Bm, self.Bz,
-                    self.Jp, self.Jm, self.Jz, self.rho_prev, self.rho_next,
-                    ps.d_rho_prev_coef, ps.d_rho_next_coef, ps.d_j_coef,
-                    ps.d_C, ps.d_S_w, self.d_kr, self.d_kz, ps.dt,
-                    use_true_rho, self.Nz, self.Nr )
+                if use_true_rho:
+                    cuda_push_eb_standard_true_rho(
+                        self.Ep, self.Em, self.Ez, self.Bp, self.Bm, self.Bz,
+                        self.Jp, self.Jm, self.Jz, self.rho_prev, self.rho_next,
+                        ps.d_rho_prev_coef, ps.d_rho_next_coef, ps.d_j_coef,
+                        ps.d_C, ps.d_S_w, self.d_kr, self.d_kz, ps.dt)
+                else:
+                    cuda_push_eb_standard(
+                        self.Ep, self.Em, self.Ez, self.Bp, self.Bm, self.Bz,
+                        self.Jp, self.Jm, self.Jz, self.rho_prev, self.rho_next,
+                        ps.d_rho_prev_coef, ps.d_rho_next_coef, ps.d_j_coef,
+                        ps.d_C, ps.d_S_w, self.d_kr, self.d_kz, ps.dt)
             else:
                 # With the Galilean/comoving algorithm
                 if self.use_pml:
@@ -414,8 +421,8 @@ class SpectralGrid(object) :
             # Obtain the cuda grid
             dim_grid, dim_block = cuda_tpb_bpg_2d( self.Nz, self.Nr)
             # Push the fields on the GPU
-            cuda_push_rho[dim_grid, dim_block](
-                self.rho_prev, self.rho_next, self.Nz, self.Nr )
+            cuda_push_rho(
+                self.rho_prev, self.rho_next )
         else :
             # Push the fields on the CPU
             self.rho_prev[:,:] = self.rho_next[:,:]
