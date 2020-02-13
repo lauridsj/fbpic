@@ -7,12 +7,18 @@ It defines a set of functions that are useful when converting the
 fields from interpolation grid to the spectral grid and vice-versa
 """
 from numba import cuda
+import cupy
 
 # ------------------
 # Copying functions
 # ------------------
 
-@cuda.jit
+@cupy.fuse()
+def cuda_copy_2dC_to_2dR_fuse( array_in, array_out_r, array_out_i ) :
+    
+    cupy.copyto(array_out_r, cupy.real(array_in))
+    cupy.copyto(array_out_i, cupy.imag(array_in))
+
 def cuda_copy_2dC_to_2dR( array_in, array_out ) :
     """
     Store the complex Nz x Nr array `array_in`
@@ -28,15 +34,19 @@ def cuda_copy_2dC_to_2dR( array_in, array_out ) :
         Array of shape (2*Nz, Nr)
     """
     # Set up cuda grid
-    iz, ir = cuda.grid(2)
     Nz, Nr = array_in.shape
 
     # Copy from array_in to array_out
-    if (iz < Nz) and (ir < Nr) :
-        array_out[iz, ir] = array_in[iz, ir].real
-        array_out[iz+Nz, ir] = array_in[iz, ir].imag
+    # array_out[:Nz,:] = array_in.real
+    # array_out[Nz:,:] = array_in.imag
+    
+    cuda_copy_2dC_to_2dR_fuse(array_in, array_out[:Nz,:], array_out[Nz:,:])
 
-@cuda.jit
+@cupy.fuse()
+def cuda_copy_2dR_to_2dC_fuse ( array_in_r, array_in_i, array_out ) :
+    
+    cupy.copyto(array_out, array_in_r + 1.j * array_in_i)
+    
 def cuda_copy_2dR_to_2dC( array_in, array_out ) :
     """
     Reconstruct the complex Nz x Nr array `array_out`,
@@ -52,12 +62,12 @@ def cuda_copy_2dR_to_2dC( array_in, array_out ) :
         Array of shape (Nz, Nr)
     """
     # Set up cuda grid
-    iz, ir = cuda.grid(2)
     Nz, Nr = array_out.shape
 
     # Copy from array_in to array_out
-    if (iz < Nz) and (ir < Nr) :
-        array_out[iz, ir] = array_in[iz, ir] + 1.j*array_in[iz+Nz, ir]
+    #array_out[:,:] = array_in[:Nz,:] + 1.j*array_in[Nz:,:]
+    
+    cuda_copy_2dR_to_2dC_fuse(array_in[:Nz,:], array_in[Nz:,:], array_out)
 
 # ----------------------------------------------------
 # Functions that combine components in spectral space

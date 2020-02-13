@@ -188,14 +188,14 @@ class DHT(object):
         # Perform the matrix product with M
         if self.use_cuda:
             # Convert C-order, complex array `F` to F-order, real `d_in`
-            cuda_copy_2dC_to_2dR[self.dim_grid, self.dim_block]( F, self.d_in )
+            cuda_copy_2dC_to_2dR( F, self.d_in )
             # Call cuBLAS gemm kernel
             cublas.dgemm(self.blas, 0, 0, self.Nr, 2*self.Nz, self.Nr,
                          1, self.d_M.data.ptr, self.Nr,
                             self.d_in.data.ptr, self.Nr,
                          0, self.d_out.data.ptr, self.Nr)
             # Convert F-order, real `d_out` to the C-order, complex `G`
-            cuda_copy_2dR_to_2dC[self.dim_grid, self.dim_block]( self.d_out, G )
+            cuda_copy_2dR_to_2dC( self.d_out, G )
         else:
             # Convert complex array `F` to real array `array_in`
             numba_copy_2dC_to_2dR( F, self.array_in )
@@ -219,14 +219,14 @@ class DHT(object):
         # Perform the matrix product with invM
         if self.use_cuda:
             # Convert C-order, complex array `G` to F-order, real `d_in`
-            cuda_copy_2dC_to_2dR[self.dim_grid, self.dim_block](G, self.d_in )
+            cuda_copy_2dC_to_2dR(G, self.d_in )
             # Call cuBLAS gemm kernel
             cublas.dgemm(self.blas, 0, 0, self.Nr, 2*self.Nz, self.Nr,
                          1, self.d_invM.data.ptr, self.Nr,
                             self.d_in.data.ptr, self.Nr,
                          0, self.d_out.data.ptr, self.Nr)
             # Convert the F-order d_out array to the C-order F array
-            cuda_copy_2dR_to_2dC[self.dim_grid, self.dim_block]( self.d_out, F )
+            cuda_copy_2dR_to_2dC( self.d_out, F )
         else:
             # Convert complex array `G` to real array `array_in`
             numba_copy_2dC_to_2dR( G, self.array_in )
