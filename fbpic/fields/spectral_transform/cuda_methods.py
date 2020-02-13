@@ -73,43 +73,37 @@ def cuda_copy_2dR_to_2dC( array_in, array_out ) :
 # Functions that combine components in spectral space
 # ----------------------------------------------------
 
-@cuda.jit
+@cupy.fuse()
 def cuda_rt_to_pm( buffer_r, buffer_t, buffer_p, buffer_m ) :
     """
     Combine the arrays buffer_r and buffer_t to produce the
     arrays buffer_p and buffer_m, according to the rules of
     the Fourier-Hankel decomposition (see associated paper)
     """
-    # Set up cuda grid
-    iz, ir = cuda.grid(2)
 
-    if (iz < buffer_r.shape[0]) and (ir < buffer_r.shape[1]) :
-        # Use intermediate variables, as the arrays
-        # buffer_r and buffer_t may actually point to the same
-        # object as buffer_p and buffer_m, for economy of memory
-        value_r = buffer_r[iz, ir]
-        value_t = buffer_t[iz, ir]
-        # Combine the values
-        buffer_p[iz, ir] = 0.5*( value_r - 1.j*value_t )
-        buffer_m[iz, ir] = 0.5*( value_r + 1.j*value_t )
+    # Use intermediate variables, as the arrays
+    # buffer_r and buffer_t may actually point to the same
+    # object as buffer_p and buffer_m, for economy of memory
+    value_r = cupy.copy(buffer_r)
+    value_t = cupy.copy(buffer_t)
+    # Combine the values
+    cupy.copyto(buffer_p, 0.5*( value_r - 1.j*value_t ))
+    cupy.copyto(buffer_m, 0.5*( value_r + 1.j*value_t ))
 
 
-@cuda.jit
+@cupy.fuse()
 def cuda_pm_to_rt( buffer_p, buffer_m, buffer_r, buffer_t ) :
     """
     Combine the arrays buffer_p and buffer_m to produce the
     arrays buffer_r and buffer_t, according to the rules of
     the Fourier-Hankel decomposition (see associated paper)
     """
-    # Set up cuda grid
-    iz, ir = cuda.grid(2)
 
-    if (iz < buffer_p.shape[0]) and (ir < buffer_p.shape[1]) :
-        # Use intermediate variables, as the arrays
-        # buffer_r and buffer_t may actually point to the same
-        # object as buffer_p and buffer_m, for economy of memory
-        value_p = buffer_p[iz, ir]
-        value_m = buffer_m[iz, ir]
-        # Combine the values
-        buffer_r[iz, ir] =     ( value_p + value_m )
-        buffer_t[iz, ir] = 1.j*( value_p - value_m )
+    # Use intermediate variables, as the arrays
+    # buffer_r and buffer_t may actually point to the same
+    # object as buffer_p and buffer_m, for economy of memory
+    value_p = cupy.copy(buffer_p)
+    value_m = cupy.copy(buffer_m)
+    # Combine the values
+    cupy.copyto(buffer_r, ( value_p + value_m ))
+    cupy.copyto(buffer_t, 1.j*( value_p - value_m ))

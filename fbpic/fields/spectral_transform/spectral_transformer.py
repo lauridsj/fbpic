@@ -138,7 +138,7 @@ class SpectralTransformer(object) :
             # explicit, but they actually point to the same object
             # as self.spect_buffer_p, self.spect_buffer_m,
             # for economy of memory)
-            cuda_pm_to_rt[self.dim_grid, self.dim_block](
+            cuda_pm_to_rt(
                 self.spect_buffer_p, self.spect_buffer_m,
                 self.spect_buffer_r, self.spect_buffer_t )
         else :
@@ -206,7 +206,7 @@ class SpectralTransformer(object) :
             # explicit, but they actually point to the same object
             # as self.spect_buffer_r, self.spect_buffer_t,
             # for economy of memory)
-            cuda_rt_to_pm[self.dim_grid, self.dim_block](
+            cuda_rt_to_pm(
                 self.spect_buffer_r, self.spect_buffer_t,
                 self.spect_buffer_p, self.spect_buffer_m )
         else :
