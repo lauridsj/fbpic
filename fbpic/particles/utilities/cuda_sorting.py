@@ -18,7 +18,7 @@ import numpy as np
 # -----------------------------------------------------
 
 @cupy.fuse()
-def get_cell_idx_per_particle(cell_idx, sorted_idx, range_idx,
+def get_cell_idx_per_particle_fuse(cell_idx, sorted_idx, range_idx,
                               x, y, z,
                               invdz, zmin, Nz,
                               invdr, rmin, Nr):
@@ -75,7 +75,7 @@ def get_cell_idx_per_particle(cell_idx, sorted_idx, range_idx,
     cupy.copyto(cell_idx, ir_upper + iz_upper * (Nr+1))
 
 @cuda.jit
-def get_cell_idx_per_particle_old(cell_idx, sorted_idx,
+def get_cell_idx_per_particle(cell_idx, sorted_idx,
                               x, y, z,
                               invdz, zmin, Nz,
                               invdr, rmin, Nr):
