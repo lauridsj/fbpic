@@ -7,12 +7,13 @@ It defines the particle push methods on the GPU using CUDA.
 """
 from scipy.constants import c, e
 from numba import cuda
+import cupy
 # Import inline function
 from .inline_functions import push_p_vay
 # Compile the inline function for GPU
 push_p_vay = cuda.jit( push_p_vay, device=True, inline=True )
 
-@cuda.jit
+@cupy.fuse()
 def push_x_gpu( x, y, z, ux, uy, uz, inv_gamma, dt,
                 x_push, y_push, z_push ) :
     """
@@ -40,15 +41,11 @@ def push_x_gpu( x, y, z, ux, uy, uz, inv_gamma, dt,
              if x_push=-1., the particles are pushed backward in x
     """
     # Timestep multiplied by c
-    cdt = c*dt
+    cdt_invg = c*dt*inv_gamma
 
-    i = cuda.grid(1)
-    if i < x.shape[0]:
-        # Particle push
-        inv_g = inv_gamma[i]
-        x[i] += cdt*x_push*inv_g*ux[i]
-        y[i] += cdt*y_push*inv_g*uy[i]
-        z[i] += cdt*z_push*inv_g*uz[i]
+    x += cdt_invg*x_push*ux
+    y += cdt_invg*y_push*uy
+    z += cdt_invg*z_push*uz
 
 @cuda.jit
 def push_p_gpu( ux, uy, uz, inv_gamma,

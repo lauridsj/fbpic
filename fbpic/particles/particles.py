@@ -650,7 +650,7 @@ class Particles(object) :
             # Get the threads per block and the blocks per grid
             dim_grid_1d, dim_block_1d = cuda_tpb_bpg_1d( self.Ntot )
             # Call the CUDA Kernel for push in x
-            push_x_gpu[dim_grid_1d, dim_block_1d](
+            push_x_gpu(
                 self.x, self.y, self.z,
                 self.ux, self.uy, self.uz,
                 self.inv_gamma, dt, x_push, y_push, z_push )
