@@ -1021,9 +1021,10 @@ class Particles(object) :
         # ------------------------
         # Get the cell index of each particle
         # (defined by iz_lower and ir_lower)
-        get_cell_idx_per_particle[dim_grid_1d, dim_block_1d](
+        get_cell_idx_per_particle(
             self.cell_idx,
             self.sorted_idx,
+            cupy.arange(self.sorted_idx.shape[0],dtype=cupy.int32),
             self.x, self.y, self.z,
             grid[0].invdz, grid[0].zmin, grid[0].Nz,
             grid[0].invdr, grid[0].rmin, grid[0].Nr)

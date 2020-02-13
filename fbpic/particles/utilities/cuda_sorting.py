@@ -9,6 +9,7 @@ from numba import cuda
 from fbpic.utils.cuda import cupy_installed
 if cupy_installed:
     from cupy.cuda import thrust
+    import cupy
 import math
 import numpy as np
 
@@ -16,8 +17,65 @@ import numpy as np
 # Sorting utilities - get_cell_idx / sort / prefix_sum
 # -----------------------------------------------------
 
+@cupy.fuse()
+def get_cell_idx_per_particle(cell_idx, sorted_idx, range_idx,
+                              x, y, z,
+                              invdz, zmin, Nz,
+                              invdr, rmin, Nr):
+    """
+    Get the cell index of each particle.
+    The cell index is 1d and calculated by:
+    cell index in z + cell index in r * number of cells in z.
+    The cell_idx of a particle is defined by
+    the lower cell in r and z, that it deposits its field to.
+
+    Parameters
+    ----------
+    cell_idx : 1darray of integers
+        The cell index of the particle
+
+    sorted_idx : 1darray of integers
+        The sorted index array needs to be reset
+        before doing the sort
+
+    x, y, z : 1darray of floats (in meters)
+        The position of the particles
+        (is modified by this function)
+
+    invdz, invdr : float (in meters^-1)
+        Inverse of the grid step along the considered direction
+
+    zmin, rmin : float (in meters)
+        Position of the edge of the simulation box, in each direction
+
+    Nz, Nr : int
+        Number of gridpoints along the considered direction
+    """
+    
+    # Preliminary arrays for the cylindrical conversion
+    r = cupy.sqrt( cupy.square(x) + cupy.square(y) )
+
+    # Positions of the particles, in the cell unit
+    r_cell =  invdr*(r - rmin)
+    z_cell =  invdz*(z - zmin)
+
+    # Treat the boundary conditions
+    # absorbing in upper r
+    ir_upper = cupy.clip(cupy.around( r_cell ).astype(cupy.int32), 0, Nr)
+    # periodic boundaries in z
+    iz_upper = cupy.remainder(cupy.around( z_cell ).astype(cupy.int32), Nz)
+    # iz_upper has values between 0 and Nz-1.
+    # ir_upper has values between 0 and Nr (included).
+    # This corresponds to the Nz*(Nr+1) different inter-gridpoint
+    # areas in a box that is periodic in z but aperiodic in r.
+
+    # Reset sorted_idx array
+    cupy.copyto(sorted_idx, range_idx)
+    # Calculate the 1D cell_idx
+    cupy.copyto(cell_idx, ir_upper + iz_upper * (Nr+1))
+
 @cuda.jit
-def get_cell_idx_per_particle(cell_idx, sorted_idx,
+def get_cell_idx_per_particle_old(cell_idx, sorted_idx,
                               x, y, z,
                               invdz, zmin, Nz,
                               invdr, rmin, Nr):
