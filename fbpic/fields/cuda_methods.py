@@ -14,7 +14,7 @@ c2 = c**2
 # Erasing functions
 # ------------------
 
-@cuda.jit
+@cupy.fuse()
 def cuda_erase_scalar( array ):
     """
     Set input array to 0
@@ -30,13 +30,14 @@ def cuda_erase_scalar( array ):
     """
 
     # Cuda 2D grid
-    iz, ir = cuda.grid(2)
+    #iz, ir = cuda.grid(2)
 
     # Set the elements of the array to 0
-    if (iz < array.shape[0]) and (ir < array.shape[1]):
-        array[iz, ir] = 0
+    #if (iz < array.shape[0]) and (ir < array.shape[1]):
+    #    array[iz, ir] = 0
+    cupy.copyto(array, 0.j)
 
-@cuda.jit
+@cupy.fuse()
 def cuda_erase_vector( array_r, array_t, array_z ):
     """
     Set the input arrays to 0
@@ -52,13 +53,17 @@ def cuda_erase_vector( array_r, array_t, array_z ):
     """
 
     # Cuda 2D grid
-    iz, ir = cuda.grid(2)
+    #iz, ir = cuda.grid(2)
 
     # Set the elements of the array to 0
-    if (iz < array_r.shape[0]) and (ir < array_r.shape[1]):
-        array_r[iz, ir] = 0
-        array_t[iz, ir] = 0
-        array_z[iz, ir] = 0
+    #if (iz < array_r.shape[0]) and (ir < array_r.shape[1]):
+    #    array_r[iz, ir] = 0
+    #    array_t[iz, ir] = 0
+    #    array_z[iz, ir] = 0
+        
+    cupy.copyto(array_r, 0.j)
+    cupy.copyto(array_t, 0.j)
+    cupy.copyto(array_z, 0.j)
 
 # ---------------------------
 # Divide by volume functions
@@ -255,39 +260,39 @@ def cuda_push_eb_standard( Ep, Em, Ez, Bp, Bm, Bz, Jp, Jm, Jz,
         * epsilon_0 * divE - rho_next_coef * dt * divJ
 
     # Push the E field
-    Ep *= C
-    Ep += 0.5*kr*rho_diff \
+    cupy.copyto(Ep, C*Ep \
+        + 0.5*kr*rho_diff \
         + c2*S_w*( -1.j*0.5*kr*Bz \
-        + kz*Bp - mu_0*Jp )
+        + kz*Bp - mu_0*Jp ))
     
-    Em *= C
-    Em += -0.5*kr*rho_diff \
+    cupy.copyto(Em, C*Em \
+        - 0.5*kr*rho_diff \
         + c2*S_w*( -1.j*0.5*kr*Bz \
-        - kz*Bm - mu_0*Jm )
+        - kz*Bm - mu_0*Jm ))
     
-    Ez *= C
-    Ez += -1.j*kz*rho_diff \
+    cupy.copyto(Ez, C*Ez \
+        + -1.j*kz*rho_diff \
         + c2*S_w*( 1.j*kr*Bp \
-        + 1.j*kr*Bm - mu_0*Jz )
+        + 1.j*kr*Bm - mu_0*Jz ))
 
     # Push the B field
-    Bp *= C
-    Bp += - S_w*( -1.j*0.5*kr*Ez_old \
+    cupy.copyto(Bp, C*Bp \
+        - S_w*( -1.j*0.5*kr*Ez_old \
                     + kz*Ep_old ) \
         + j_coef*( -1.j*0.5*kr*Jz \
-                    + kz*Jp )
+                    + kz*Jp ))
 
-    Bm *= C
-    Bm += - S_w*( -1.j*0.5*kr*Ez_old \
+    cupy.copyto(Bm, C*Bm \
+        - S_w*( -1.j*0.5*kr*Ez_old \
                     - kz*Em_old ) \
         + j_coef*( -1.j*0.5*kr*Jz \
-                    - kz*Jm )
+                    - kz*Jm ))
 
-    Bz *= C
-    Bz += - S_w*( 1.j*kr*Ep_old \
+    cupy.copyto(Bz, C*Bz \
+        - S_w*( 1.j*kr*Ep_old \
                     + 1.j*kr*Em_old ) \
         + j_coef*( 1.j*kr*Jp \
-                    + 1.j*kr*Jm )
+                    + 1.j*kr*Jm ))
     
 @cupy.fuse()
 def cuda_push_eb_standard_true_rho( Ep, Em, Ez, Bp, Bm, Bz, Jp, Jm, Jz,
@@ -309,39 +314,39 @@ def cuda_push_eb_standard_true_rho( Ep, Em, Ez, Bp, Bm, Bz, Jp, Jm, Jz,
          - rho_prev_coef * rho_prev
     
     # Push the E field
-    Ep *= C
-    Ep += 0.5*kr*rho_diff \
+    cupy.copyto(Ep, C*Ep \
+        + 0.5*kr*rho_diff \
         + c2*S_w*( -1.j*0.5*kr*Bz \
-        + kz*Bp - mu_0*Jp )
+        + kz*Bp - mu_0*Jp ))
     
-    Em *= C
-    Em += -0.5*kr*rho_diff \
+    cupy.copyto(Em, C*Em \
+        - 0.5*kr*rho_diff \
         + c2*S_w*( -1.j*0.5*kr*Bz \
-        - kz*Bm - mu_0*Jm )
+        - kz*Bm - mu_0*Jm ))
     
-    Ez *= C
-    Ez += -1.j*kz*rho_diff \
+    cupy.copyto(Ez, C*Ez \
+        + -1.j*kz*rho_diff \
         + c2*S_w*( 1.j*kr*Bp \
-        + 1.j*kr*Bm - mu_0*Jz )
+        + 1.j*kr*Bm - mu_0*Jz ))
 
     # Push the B field
-    Bp *= C
-    Bp += - S_w*( -1.j*0.5*kr*Ez_old \
+    cupy.copyto(Bp, C*Bp \
+        - S_w*( -1.j*0.5*kr*Ez_old \
                     + kz*Ep_old ) \
         + j_coef*( -1.j*0.5*kr*Jz \
-                    + kz*Jp )
+                    + kz*Jp ))
 
-    Bm *= C
-    Bm += - S_w*( -1.j*0.5*kr*Ez_old \
+    cupy.copyto(Bm, C*Bm \
+        - S_w*( -1.j*0.5*kr*Ez_old \
                     - kz*Em_old ) \
         + j_coef*( -1.j*0.5*kr*Jz \
-                    - kz*Jm )
+                    - kz*Jm ))
 
-    Bz *= C
-    Bz += - S_w*( 1.j*kr*Ep_old \
+    cupy.copyto(Bz, C*Bz \
+        - S_w*( 1.j*kr*Ep_old \
                     + 1.j*kr*Em_old ) \
         + j_coef*( 1.j*kr*Jp \
-                    + 1.j*kr*Jm )
+                    + 1.j*kr*Jm ))
 
 
 @cuda.jit

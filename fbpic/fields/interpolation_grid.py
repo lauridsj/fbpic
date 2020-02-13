@@ -173,15 +173,15 @@ class InterpolationGrid(object) :
 
             # Erase the arrays on the GPU
             if fieldtype == 'rho':
-                cuda_erase_scalar[dim_grid, dim_block](self.rho)
+                cuda_erase_scalar(self.rho)
             elif fieldtype == 'J':
-                cuda_erase_vector[dim_grid, dim_block](
+                cuda_erase_vector(
                       self.Jr, self.Jt, self.Jz)
             elif fieldtype == 'E':
-                cuda_erase_vector[dim_grid, dim_block](
+                cuda_erase_vector(
                       self.Er, self.Et, self.Ez)
             elif fieldtype == 'B':
-                cuda_erase_vector[dim_grid, dim_block](
+                cuda_erase_vector(
                       self.Br, self.Bt, self.Bz)
             else:
                 raise ValueError('Invalid string for fieldtype: %s'%fieldtype)
