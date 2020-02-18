@@ -521,16 +521,6 @@ def cuda_damp_EB_left_old( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
             Bt[iz, ir] *= damp_factor_left
             Bz[iz, ir] *= damp_factor_left
 
-# Actual kernel - a simple scalar operation
-@cupy.fuse()
-def cuda_damp_EB_fuse( Er, Et, Ez, Br, Bt, Bz, damp_array ):
-    
-    Er *= damp_array
-    Et *= damp_array
-    Ez *= damp_array
-    Br *= damp_array
-    Bt *= damp_array
-    Bz *= damp_array
     
 # The slicing of the field happens in a helper method using cupy.newaxis
 def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
@@ -542,6 +532,17 @@ def cuda_damp_EB_right( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
     
     cuda_damp_EB_fuse(Er[-nd:,:], Et[-nd:,:], Ez[-nd:,:],
         Br[-nd:,:], Bt[-nd:,:], Bz[-nd:,:], damp_array[nd::-1,cupy.newaxis] )
+    
+# Actual kernel - a simple scalar operation
+@cupy.fuse()
+def cuda_damp_EB_fuse( Er, Et, Ez, Br, Bt, Bz, damp_array ):
+    
+    Er *= damp_array
+    Et *= damp_array
+    Ez *= damp_array
+    Br *= damp_array
+    Bt *= damp_array
+    Bz *= damp_array
 
 @cuda.jit
 def cuda_damp_EB_left_pml( Er_pml, Et_pml, Br_pml, Bt_pml, damp_array, nd ):

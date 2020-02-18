@@ -16,8 +16,8 @@ import cupy
 @cupy.fuse()
 def cuda_copy_2dC_to_2dR_fuse( array_in, array_out_r, array_out_i ) :
     
-    cupy.copyto(array_out_r, cupy.real(array_in))
-    cupy.copyto(array_out_i, cupy.imag(array_in))
+    array_out_r[:] = cupy.real(array_in)
+    array_out_i[:] = cupy.imag(array_in)
 
 def cuda_copy_2dC_to_2dR( array_in, array_out ) :
     """
@@ -45,7 +45,7 @@ def cuda_copy_2dC_to_2dR( array_in, array_out ) :
 @cupy.fuse()
 def cuda_copy_2dR_to_2dC_fuse ( array_in_r, array_in_i, array_out ) :
     
-    cupy.copyto(array_out, array_in_r + 1.j * array_in_i)
+    array_out[:] = array_in_r + 1.j * array_in_i
     
 def cuda_copy_2dR_to_2dC( array_in, array_out ) :
     """
@@ -87,8 +87,8 @@ def cuda_rt_to_pm( buffer_r, buffer_t, buffer_p, buffer_m ) :
     value_r = cupy.copy(buffer_r)
     value_t = cupy.copy(buffer_t)
     # Combine the values
-    cupy.copyto(buffer_p, 0.5*( value_r - 1.j*value_t ))
-    cupy.copyto(buffer_m, 0.5*( value_r + 1.j*value_t ))
+    buffer_p[:] = 0.5*( value_r - 1.j*value_t )
+    buffer_m[:] = 0.5*( value_r + 1.j*value_t )
 
 
 @cupy.fuse()
@@ -105,5 +105,5 @@ def cuda_pm_to_rt( buffer_p, buffer_m, buffer_r, buffer_t ) :
     value_p = cupy.copy(buffer_p)
     value_m = cupy.copy(buffer_m)
     # Combine the values
-    cupy.copyto(buffer_r, ( value_p + value_m ))
-    cupy.copyto(buffer_t, 1.j*( value_p - value_m ))
+    buffer_r[:] =  ( value_p + value_m )
+    buffer_t[:] =  1.j*( value_p - value_m )
