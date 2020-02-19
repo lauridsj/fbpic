@@ -8,7 +8,7 @@ It defines a set of generic functions that operate on a GPU.
 from numba import cuda
 import cupy
 
-@cuda.jit
+#@cuda.jit
 def copy_vec_to_gpu_buffer( vec_buffer_l, vec_buffer_r,
                             grid_r, grid_t, grid_z, m,
                             copy_left, copy_right, nz_start, nz_end ):
@@ -50,23 +50,24 @@ def copy_vec_to_gpu_buffer( vec_buffer_l, vec_buffer_r,
     Nz, Nr = grid_r.shape
 
     # Obtain Cuda grid
-    iz, ir = cuda.grid(2)
+    #iz, ir = cuda.grid(2)
 
     # Copy the inner regions of the domain to the buffer
-    if ir < Nr:
-        if iz < (nz_end - nz_start):
+    #if ir < Nr:
+    #    if iz < (nz_end - nz_start):
             # At the left end
-            if copy_left:
-                iz_left = nz_start + iz
-                vec_buffer_l[3*m+0, iz, ir] = grid_r[ iz_left, ir ]
-                vec_buffer_l[3*m+1, iz, ir] = grid_t[ iz_left, ir ]
-                vec_buffer_l[3*m+2, iz, ir] = grid_z[ iz_left, ir ]
-            # At the right end
-            if copy_right:
-                iz_right = Nz - nz_end + iz
-                vec_buffer_r[3*m+0, iz, ir] = grid_r[ iz_right, ir ]
-                vec_buffer_r[3*m+1, iz, ir] = grid_t[ iz_right, ir ]
-                vec_buffer_r[3*m+2, iz, ir] = grid_z[ iz_right, ir ]
+    max_iz = nz_end - nz_start
+    if copy_left:
+        #iz_left = nz_start + iz
+        cupy.copyto(vec_buffer_l[3*m+0, :, :], grid_r[ nz_start:nz_end, : ])
+        vec_buffer_l[3*m+1, :, :] = grid_t[ nz_start:nz_end, : ]
+        vec_buffer_l[3*m+2, :, :] = grid_z[ nz_start:nz_end, : ]
+    # At the right end
+    if copy_right:
+        #iz_right = Nz - nz_end + iz
+        vec_buffer_r[3*m+0, :, :] = grid_r[ (Nz - nz_end):(Nz - nz_start), : ]
+        vec_buffer_r[3*m+1, :, :] = grid_t[ (Nz - nz_end):(Nz - nz_start), : ]
+        vec_buffer_r[3*m+2, :, :] = grid_z[ (Nz - nz_end):(Nz - nz_start), : ]
 
 
 @cuda.jit

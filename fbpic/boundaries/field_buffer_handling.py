@@ -199,7 +199,7 @@ class BufferHandler(object):
                 for m in range(self.Nm):
                     if pml_r is None:
                         # Copy only the regular components
-                        copy_vec_to_gpu_buffer[ dim_grid_2d, dim_block_2d ](
+                        copy_vec_to_gpu_buffer(
                             self.d_send_l[exchange_type],
                             self.d_send_r[exchange_type],
                             grid_r[m], grid_t[m], grid_z[m], m,
