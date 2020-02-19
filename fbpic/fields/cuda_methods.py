@@ -70,7 +70,7 @@ def cuda_erase_vector( array_r, array_t, array_z ):
 # Divide by volume functions
 # ---------------------------
 
-@cuda.jit
+@cupy.fuse()
 def cuda_divide_scalar_by_volume( array, invvol ):
     """
     Multiply the input array by the corresponding invvol
@@ -86,15 +86,10 @@ def cuda_divide_scalar_by_volume( array, invvol ):
        The axis corresponds to r
     """
 
-    # Cuda 2D grid
-    iz, ir = cuda.grid(2)
-
-    # Multiply by inverse volume
-    if (iz < array.shape[0]) and (ir < array.shape[1]):
-        array[iz, ir] = array[iz, ir] * invvol[ir]
+    array *= invvol
 
 
-@cuda.jit
+@cupy.fuse()
 def cuda_divide_vector_by_volume( array_r, array_t, array_z, invvol ):
     """
     Multiply the input arrays by the corresponding invvol
@@ -110,14 +105,9 @@ def cuda_divide_vector_by_volume( array_r, array_t, array_z, invvol ):
        The axis corresponds to r
     """
 
-    # Cuda 2D grid
-    iz, ir = cuda.grid(2)
-
-    # Multiply by inverse volume
-    if (iz < array_r.shape[0]) and (ir < array_r.shape[1]):
-        array_r[iz, ir] = array_r[iz, ir] * invvol[ir]
-        array_t[iz, ir] = array_t[iz, ir] * invvol[ir]
-        array_z[iz, ir] = array_z[iz, ir] * invvol[ir]
+    array_r *= invvol
+    array_t *= invvol
+    array_z *= invvol
 
 # -----------------------------------
 # Methods of the SpectralGrid object

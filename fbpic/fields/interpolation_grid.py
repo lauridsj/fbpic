@@ -219,15 +219,13 @@ class InterpolationGrid(object) :
             the volume (either 'rho' or 'J')
         """
         if self.use_cuda :
-            # Perform division on the GPU
-            dim_grid, dim_block = cuda_tpb_bpg_2d( self.Nz, self.Nr )
 
             if fieldtype == 'rho':
-                cuda_divide_scalar_by_volume[dim_grid, dim_block](
-                        self.rho, self.d_invvol )
+                cuda_divide_scalar_by_volume(
+                        self.rho, self.d_invvol[cupy.newaxis, :] )
             elif fieldtype == 'J':
-                cuda_divide_vector_by_volume[dim_grid, dim_block](
-                        self.Jr, self.Jt, self.Jz, self.d_invvol )
+                cuda_divide_vector_by_volume(
+                        self.Jr, self.Jt, self.Jz, self.d_invvol[cupy.newaxis, :]  )
             else:
                 raise ValueError('Invalid string for fieldtype: %s'%fieldtype)
         else :
