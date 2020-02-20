@@ -197,7 +197,7 @@ def mpi_select_gpus(mpi):
 
 if cupy_installed:
     
-    def compile_cupy(argtypes=[]):
+    def compile_cupy_static(argtypes=[]):
     
         class CupyKernel(object):
 
@@ -221,3 +221,37 @@ if cupy_installed:
                 self.cupy_kernel(bpg, tpb, kernel_args)
 
         return CupyKernel
+    
+    
+    
+    class compile_cupy(object):
+        
+        def __init__(self, func):
+            
+            self.compiled = False
+            self.python_func = func
+          
+        def __getitem__(self, bt):
+            
+            def call_kernel(*args):
+                
+                if not self.compiled:
+
+                    numba_kernel = cuda.jit()(self.python_func).specialize(*args)
+
+                    module = cupy.cuda.function.Module()
+                    module.load( bytes( numba_kernel.ptx, 'UTF-8' ) )
+                    self.cupy_kernel = module.get_function(numba_kernel.entry_name)
+                    self.compiled = True
+
+                kernel_args = []
+                for a in args:
+                    if isinstance(a, cupy.ndarray):
+                        kernel_args.extend([0, 0, a.size, a.dtype.itemsize, a, *a.shape, *a.strides])
+                    else:
+                        kernel_args.append(a)
+
+                self.cupy_kernel(bt[0], bt[1], kernel_args)
+                
+            return call_kernel
+                

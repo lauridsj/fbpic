@@ -483,9 +483,7 @@ def add_scal_from_gpu_buffer( scal_buffer_l, scal_buffer_r, grid, m,
 
 # CUDA damping kernels:
 # --------------------
-@compile_cupy(argtypes=[complex128[:,:],complex128[:,:],complex128[:,:],
-                    complex128[:,:],complex128[:,:],complex128[:,:],
-                    float64[:],int64])
+@compile_cupy
 def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
     """
     Multiply the E and B fields in the left guard cells
