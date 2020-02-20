@@ -4,7 +4,7 @@
 """
 This file is part of the Fourier-Bessel Particle-In-Cell code (FB-PIC)
 It defines a set of generic functions that operate on a GPU.
-"""ƒ
+"""
 from numba import cuda, boolean, int64, float64, complex128
 
 from fbpic.utils.cuda import compile_cupy

@@ -56,7 +56,7 @@ def cuda_tpb_bpg_1d(x, TPB = 256):
     """
     # Calculates the needed blocks per grid
     BPG = int(x/TPB + 1)
-    return BPG, TPB
+    return (BPG,), (TPB,)
 
 def cuda_tpb_bpg_2d(x, y, TPBx = 1, TPBy = 128):
     """
