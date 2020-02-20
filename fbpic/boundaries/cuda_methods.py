@@ -5,7 +5,9 @@
 This file is part of the Fourier-Bessel Particle-In-Cell code (FB-PIC)
 It defines a set of generic functions that operate on a GPU.
 """
-from numba import cuda
+from numba import cuda, boolean, int64, float64, complex128
+
+from fbpic.utils.cuda import compile_cupy
 
 @cuda.jit
 def copy_vec_to_gpu_buffer( vec_buffer_l, vec_buffer_r,
@@ -481,7 +483,9 @@ def add_scal_from_gpu_buffer( scal_buffer_l, scal_buffer_r, grid, m,
 
 # CUDA damping kernels:
 # --------------------
-@cuda.jit
+@compile_cupy(argtypes=[complex128[:,:],complex128[:,:],complex128[:,:],
+                    complex128[:,:],complex128[:,:],complex128[:,:],
+                    float64[:],int64])
 def cuda_damp_EB_left( Er, Et, Ez, Br, Bt, Bz, damp_array, nd ):
     """
     Multiply the E and B fields in the left guard cells

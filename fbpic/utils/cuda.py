@@ -189,3 +189,35 @@ def mpi_select_gpus(mpi):
         if rank%n_gpus == i_gpu:
             cuda.select_device(i_gpu)
         mpi.COMM_WORLD.barrier()
+        
+
+# -----------------------------------------------------
+# CUDA kernel decorator
+# -----------------------------------------------------
+
+if cupy_installed:
+    
+    def compile_cupy(argtypes=[]):
+    
+        class CupyKernel(object):
+
+            def __init__(self, func):
+
+                numba_kernel = cuda.jit(argtypes=argtypes)(func)
+
+                module = cupy.cuda.function.Module()
+                module.load( bytes( numba_kernel.ptx, 'UTF-8' ) )
+                self.cupy_kernel = module.get_function(numba_kernel.entry_name)           
+
+            def __call__(self, bpg, tpb, *args):
+
+                kernel_args = []
+                for a in args:
+                    if isinstance(a, cupy.ndarray):
+                        kernel_args.extend([0, 0, a.size, a.dtype.itemsize, a, *a.shape, *a.strides])
+                    else:
+                        kernel_args.append(a)
+
+                self.cupy_kernel(bpg, tpb, kernel_args)
+
+        return CupyKernel
