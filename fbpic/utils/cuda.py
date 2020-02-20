@@ -222,27 +222,45 @@ if cupy_installed:
 
         return CupyKernel
     
-    
+    def get_args_string(args):
+        
+        s = ""
+        
+        for a in args:
+            if isinstance(a, cupy.ndarray):
+                s += str(a.dtype)
+                s += "["
+                s += str(a.ndim)
+                s += "];"
+            else:
+                s += type(a).__name__
+                s += ";"
+                
+        return s
     
     class compile_cupy(object):
         
         def __init__(self, func):
             
-            self.compiled = False
             self.python_func = func
+            self.kernel_dict = {}
           
         def __getitem__(self, bt):
             
             def call_kernel(*args):
                 
-                if not self.compiled:
+                argtypes = get_args_string(args)
+                
+                if not argtypes in self.kernel_dict:
+                    
+                    print("Compiling kernel {:s} for argtypes {:s}".format(self.python_func.__name__, argtypes))
 
                     numba_kernel = cuda.jit()(self.python_func).specialize(*args)
 
                     module = cupy.cuda.function.Module()
                     module.load( bytes( numba_kernel.ptx, 'UTF-8' ) )
-                    self.cupy_kernel = module.get_function(numba_kernel.entry_name)
-                    self.compiled = True
+                    self.kernel_dict[argtypes] = module.get_function(numba_kernel.entry_name)
+                    
 
                 kernel_args = []
                 for a in args:
@@ -251,7 +269,7 @@ if cupy_installed:
                     else:
                         kernel_args.append(a)
 
-                self.cupy_kernel(bt[0], bt[1], kernel_args)
+                self.kernel_dict[argtypes](bt[0], bt[1], kernel_args)
                 
             return call_kernel
                 
