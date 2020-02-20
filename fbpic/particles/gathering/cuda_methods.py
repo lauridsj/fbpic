@@ -7,6 +7,7 @@ It defines the field gathering methods linear and cubic order shapes
 on the GPU using CUDA.
 """
 from numba import cuda, float64, int64
+from fbpic.utils.cuda import compile_cupy
 import math
 # Import inline functions
 from .inline_functions import \
@@ -21,7 +22,7 @@ add_cubic_gather_for_mode = cuda.jit( add_cubic_gather_for_mode,
 # Field gathering linear
 # -----------------------
 
-@cuda.jit
+@compile_cupy
 def gather_field_gpu_linear(x, y, z,
                     invdz, zmin, Nz,
                     invdr, rmin, Nr,
@@ -200,7 +201,7 @@ def gather_field_gpu_linear(x, y, z,
 # Field gathering cubic
 # -----------------------
 
-@cuda.jit
+@compile_cupy
 def gather_field_gpu_cubic(x, y, z,
                     invdz, zmin, Nz,
                     invdr, rmin, Nr,

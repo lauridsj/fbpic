@@ -10,6 +10,7 @@ from numba import cuda
 import math
 from scipy.constants import c
 import numpy as np
+from fbpic.utils.cuda import compile_cupy
 
 # -------------------------------
 # Particle shape Factor functions
@@ -81,7 +82,7 @@ def r_shape_cubic(cell_position, index):
 # Field deposition - linear - rho
 # -------------------------------
 
-@cuda.jit
+@compile_cupy
 def deposit_rho_gpu_linear(x, y, z, w, q,
                            invdz, zmin, Nz,
                            invdr, rmin, Nr,
@@ -246,7 +247,7 @@ def deposit_rho_gpu_linear(x, y, z, w, q,
 # Field deposition - linear - J
 # -------------------------------
 
-@cuda.jit
+@compile_cupy
 def deposit_J_gpu_linear(x, y, z, w, q,
                          ux, uy, uz, inv_gamma,
                          invdz, zmin, Nz,
@@ -501,7 +502,7 @@ def deposit_J_gpu_linear(x, y, z, w, q,
 # Field deposition - cubic - rho
 # -------------------------------
 
-@cuda.jit
+@compile_cupy
 def deposit_rho_gpu_cubic(x, y, z, w, q,
                           invdz, zmin, Nz,
                           invdr, rmin, Nr,
@@ -777,7 +778,7 @@ def deposit_rho_gpu_cubic(x, y, z, w, q,
 # Field deposition - cubic - J
 # -------------------------------
 
-@cuda.jit
+@compile_cupy
 def deposit_J_gpu_cubic(x, y, z, w, q,
                         ux, uy, uz, inv_gamma,
                         invdz, zmin, Nz,

@@ -13,7 +13,7 @@ from fbpic.particles.utilities.utility_methods import weights
 from fbpic.particles.deposition.numba_methods import deposit_field_numba
 
 # Check if CUDA is available, then import CUDA functions
-from fbpic.utils.cuda import cupy_installed, cuda_installed
+from fbpic.utils.cuda import cupy_installed, cuda_installed, compile_cupy
 if cupy_installed:
     import cupy
 if cuda_installed:
@@ -491,7 +491,7 @@ class LaserAntenna( object ):
 
 if cuda_installed:
 
-    @cuda.jit()
+    @compile_cupy
     def add_rho_to_gpu_array( iz_min, rho_buffer, rho, m ):
         """
         Add the small-size array rho_buffer into the full-size array rho
@@ -520,7 +520,7 @@ if cuda_installed:
             rho[iz_min, ir] += rho_buffer[m, 0, ir]
             rho[iz_min+1, ir] += rho_buffer[m, 1, ir]
 
-    @cuda.jit()
+    @compile_cupy
     def add_J_to_gpu_array( iz_min, Jr_buffer, Jt_buffer,
                             Jz_buffer, Jr, Jt, Jz, m ):
         """

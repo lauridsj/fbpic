@@ -7,12 +7,13 @@ It defines a set of functions that are useful when converting the
 fields from interpolation grid to the spectral grid and vice-versa
 """
 from numba import cuda
+from fbpic.utils.cuda import compile_cupy
 
 # ------------------
 # Copying functions
 # ------------------
 
-@cuda.jit
+@compile_cupy
 def cuda_copy_2dC_to_2dR( array_in, array_out ) :
     """
     Store the complex Nz x Nr array `array_in`
@@ -36,7 +37,7 @@ def cuda_copy_2dC_to_2dR( array_in, array_out ) :
         array_out[iz, ir] = array_in[iz, ir].real
         array_out[iz+Nz, ir] = array_in[iz, ir].imag
 
-@cuda.jit
+@compile_cupy
 def cuda_copy_2dR_to_2dC( array_in, array_out ) :
     """
     Reconstruct the complex Nz x Nr array `array_out`,
@@ -63,7 +64,7 @@ def cuda_copy_2dR_to_2dC( array_in, array_out ) :
 # Functions that combine components in spectral space
 # ----------------------------------------------------
 
-@cuda.jit
+@compile_cupy
 def cuda_rt_to_pm( buffer_r, buffer_t, buffer_p, buffer_m ) :
     """
     Combine the arrays buffer_r and buffer_t to produce the
@@ -84,7 +85,7 @@ def cuda_rt_to_pm( buffer_r, buffer_t, buffer_p, buffer_m ) :
         buffer_m[iz, ir] = 0.5*( value_r + 1.j*value_t )
 
 
-@cuda.jit
+@compile_cupy
 def cuda_pm_to_rt( buffer_p, buffer_m, buffer_r, buffer_t ) :
     """
     Combine the arrays buffer_p and buffer_m to produce the
