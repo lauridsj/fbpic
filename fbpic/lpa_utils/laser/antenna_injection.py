@@ -170,10 +170,10 @@ class LaserAntenna( object ):
         self.Jt_buffer = np.empty( (Nm, 2, Nr_grid), dtype='complex' )
         self.Jz_buffer = np.empty( (Nm, 2, Nr_grid), dtype='complex' )
         if cuda_installed:
-            self.d_rho_buffer = cupy.empty_like( self.rho_buffer )
-            self.d_Jr_buffer = cupy.empty_like( self.Jr_buffer )
-            self.d_Jt_buffer = cupy.empty_like( self.Jt_buffer )
-            self.d_Jz_buffer = cupy.empty_like( self.Jz_buffer )
+            self.d_rho_buffer = cupy.asarray( self.rho_buffer )
+            self.d_Jr_buffer = cupy.asarray( self.Jr_buffer )
+            self.d_Jt_buffer = cupy.asarray( self.Jt_buffer )
+            self.d_Jz_buffer = cupy.asarray( self.Jz_buffer )
 
     def update_current_rank(self, comm):
         """
@@ -447,7 +447,7 @@ class LaserAntenna( object ):
         else:
             # The large-size array rho is on the GPU
             # Copy the small-size buffer to the GPU
-            cupy.asarray( self.rho_buffer, to=self.d_rho_buffer )
+            self.d_rho_buffer.set(self.rho_buffer)
             # On the GPU: add the small-size buffers to the large-size array
             dim_grid_1d, dim_block_1d = cuda_tpb_bpg_1d( grid[0].Nr, TPB=64 )
             for m in range( Nm ):
@@ -479,9 +479,9 @@ class LaserAntenna( object ):
         else:
             # The large-size arrays for J are on the GPU
             # Copy the small-size buffers to the GPU
-            cupy.asarray( self.Jr_buffer, to=self.d_Jr_buffer )
-            cupy.asarray( self.Jt_buffer, to=self.d_Jt_buffer )
-            cupy.asarray( self.Jz_buffer, to=self.d_Jz_buffer )
+            self.d_Jr_buffer.set(self.Jr_buffer)
+            self.d_Jt_buffer.set(self.Jt_buffer)
+            self.d_Jz_buffer.set(self.Jz_buffer)
             # On the GPU: add the small-size buffers to the large-size array
             dim_grid_1d, dim_block_1d = cuda_tpb_bpg_1d( grid[0].Nr, TPB=64 )
             for m in range( Nm ):
