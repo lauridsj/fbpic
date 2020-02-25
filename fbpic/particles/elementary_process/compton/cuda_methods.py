@@ -52,7 +52,7 @@ def get_photon_density_gaussian_cuda( photon_n, elec_Ntot,
             laser_initial_z0, gamma_boost, beta_boost )
 
 
-@compile_cupy
+@cuda.jit
 def determine_scatterings_cuda( N_batch, batch_size, elec_Ntot,
     nscatter_per_elec, nscatter_per_batch, random_states, dt,
     elec_ux, elec_uy, elec_uz, elec_inv_gamma, ratio_w_electron_photon,
@@ -101,7 +101,7 @@ def determine_scatterings_cuda( N_batch, batch_size, elec_Ntot,
             ip = ip + 1
 
 
-@compile_cupy
+@cuda.jit
 def scatter_photons_electrons_cuda(
     N_batch, batch_size, photon_old_Ntot, elec_Ntot,
     cumul_nscatter_per_batch, nscatter_per_elec, random_states,
