@@ -197,22 +197,6 @@ def mpi_select_gpus(mpi):
 
 if cupy_installed:
     
-    def get_args_string(args):
-        
-        s = ""
-        
-        for a in args:
-            if isinstance(a, cupy.ndarray):
-                s += str(a.dtype)
-                s += "["
-                s += str(a.ndim)
-                s += "];"
-            else:
-                s += type(a).__name__
-                s += ";"
-                
-        return s
-    
     def get_args_hash(args):
         """
         Computes a hash from the argument types of a kernel call.
@@ -314,9 +298,6 @@ if cupy_installed:
                 hash = get_args_hash(args)
 
                 if hash not in self.kernel_dict:
-
-                    print("Compiling kernel {:s} for argtypes {:s} (hash: {:d})".format(
-                        self.python_func.__name__, get_args_string(args), hash))
 
                     # Compile a Numba kernel for the specified arguments
                     # using cuda.jit
