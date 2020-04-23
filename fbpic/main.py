@@ -58,7 +58,8 @@ class Simulation(object):
                  boundaries={'z':'periodic', 'r':'reflective'},
                  gamma_boost=None, use_all_mpi_ranks=True,
                  particle_shape='linear', verbose_level=1,
-                 smoother=None ):
+                 smoother=None, use_ruyten_shapes='all',
+                 use_modified_volume='all' ):
         """
         Initializes a simulation.
 
@@ -211,6 +212,14 @@ class Simulation(object):
         smoother: an instance of :any:`BinomialSmoother`, optional
             Determines how the charge and currents are smoothed.
             (Default: one-pass binomial filter and no compensator.)
+
+        use_ruyten_shapes: str, optional
+            Whether to use Ruyten shape factors in all modes
+            ('all'), only mode 0 ('mode_0') or not at all ('none').
+
+        use_modified_volume: str, optional
+            Whether to use the modified volume in all modes
+            ('all'), only mode 0 ('mode_0') or not at all ('none').
         """
         # Check whether to use CUDA
         self.use_cuda = use_cuda
@@ -286,7 +295,9 @@ class Simulation(object):
                     use_cuda=self.use_cuda,
                     smoother=smoother,
                     # Only create threading buffers when running on CPU
-                    create_threading_buffers=(self.use_cuda is False) )
+                    create_threading_buffers=(self.use_cuda is False),
+                    use_ruyten_shapes=use_ruyten_shapes,
+                    use_modified_volume=use_modified_volume )
 
         # Initialize the electrons and the ions
         self.grid_shape = self.fld.interp[0].Ez.shape

@@ -50,7 +50,9 @@ class Fields(object) :
     def __init__( self, Nz, zmax, Nr, rmax, Nm, dt, zmin=0.,
                   n_order=-1, v_comoving=None, use_pml=False, use_galilean=True,
                   current_correction='cross-deposition', use_cuda=False,
-                  smoother=None, create_threading_buffers=False ):
+                  smoother=None, create_threading_buffers=False,
+                  use_ruyten_shapes='all',
+                  use_modified_volume='all' ):
         """
         Initialize the components of the Fields object
 
@@ -152,14 +154,24 @@ class Fields(object) :
             self.trans.append( SpectralTransformer(
                 Nz, Nr, m, rmax, use_cuda=self.use_cuda ) )
 
+        assert use_ruyten_shapes in ['all', 'mode_0', 'none']
+        assert use_modified_volume in ['all', 'mode_0', 'none']
+
         # Create the interpolation grid for each modes
         # (one grid per azimuthal mode)
         self.interp = [ ]
         for m in range(Nm) :
+            ruyten_shapes = use_ruyten_shapes == 'all' \
+                or ( use_ruyten_shapes == "mode_0" and m == 0 )
+            mod_volume = use_modified_volume == 'all' \
+                or ( use_modified_volume == "mode_0" and m == 0 )
+
             # Create the object
             self.interp.append( InterpolationGrid(
                 Nz, Nr, m, zmin, zmax, rmax,
-                use_pml=use_pml, use_cuda=self.use_cuda ) )
+                use_pml=use_pml, use_cuda=self.use_cuda,
+                use_ruyten_shapes=ruyten_shapes,
+                use_modified_volume=mod_volume ) )
 
         # Get the kz and (finite-order) modified kz arrays
         # (According to FFT conventions, the kz array starts with
