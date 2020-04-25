@@ -31,7 +31,8 @@ class InterpolationGrid(object) :
     def __init__(self, Nz, Nr, m, zmin, zmax, rmax,
                     use_pml=False, use_cuda=False,
                     use_ruyten_shapes=True,
-                    use_modified_volume=True ):
+                    use_modified_volume=True,
+                    use_true_sign=True ):
         """
         Allocates the matrices corresponding to the spatial grid
 
@@ -108,6 +109,9 @@ class InterpolationGrid(object) :
             print("Using standard shape factors for mode {}".format(m))
             self.ruyten_linear_coef = np.zeros(Nr)
             self.ruyten_cubic_coef = np.zeros(Nr)
+
+        self.flip_factor = 1 if use_true_sign else -1
+        print("Sign used for deposition on the axis: {} on mode {}".format(self.flip_factor, m))
 
         # Allocate the fields arrays
         self.Er = np.zeros( (Nz, Nr), dtype='complex' )

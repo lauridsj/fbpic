@@ -893,7 +893,8 @@ class Particles(object) :
                             grid[0].rho, grid[1].rho,
                             self.cell_idx, self.prefix_sum,
                             grid[0].d_ruyten_linear_coef,
-                            grid[1].d_ruyten_linear_coef)
+                            grid[1].d_ruyten_linear_coef,
+                            grid[0].flip_factor)
                     else:
                         for m in range(Nm):
                             deposit_rho_gpu_linear_one_mode[
@@ -903,7 +904,8 @@ class Particles(object) :
                                 grid[m].invdr, grid[m].rmin, grid[m].Nr,
                                 grid[m].rho, m,
                                 self.cell_idx, self.prefix_sum,
-                                grid[m].d_ruyten_linear_coef)
+                                grid[m].d_ruyten_linear_coef,
+                                grid[m].flip_factor)
                 elif self.particle_shape == 'cubic':
                     if Nm == 2:
                         deposit_rho_gpu_cubic[
@@ -914,7 +916,8 @@ class Particles(object) :
                             grid[0].rho, grid[1].rho,
                             self.cell_idx, self.prefix_sum,
                             grid[0].d_ruyten_cubic_coef,
-                            grid[1].d_ruyten_cubic_coef)
+                            grid[1].d_ruyten_cubic_coef,
+                            grid[0].flip_factor)
                     else:
                         for m in range(Nm):
                             deposit_rho_gpu_cubic_one_mode[
@@ -924,7 +927,8 @@ class Particles(object) :
                                 grid[m].invdr, grid[m].rmin, grid[m].Nr,
                                 grid[m].rho, m,
                                 self.cell_idx, self.prefix_sum,
-                                grid[m].d_ruyten_cubic_coef)
+                                grid[m].d_ruyten_cubic_coef,
+                                grid[m].flip_factor)
             # J
             elif fieldtype == 'J':
                 # Deposit J in each of four directions
@@ -941,7 +945,8 @@ class Particles(object) :
                             grid[0].Jz, grid[1].Jz,
                             self.cell_idx, self.prefix_sum,
                             grid[0].d_ruyten_linear_coef,
-                            grid[1].d_ruyten_linear_coef)
+                            grid[1].d_ruyten_linear_coef,
+                            grid[0].flip_factor)
                     else:
                         for m in range(Nm):
                             deposit_J_gpu_linear_one_mode[
@@ -952,7 +957,8 @@ class Particles(object) :
                                 grid[m].invdr, grid[m].rmin, grid[m].Nr,
                                 grid[m].Jr, grid[m].Jt, grid[m].Jz, m,
                                 self.cell_idx, self.prefix_sum,
-                                grid[m].d_ruyten_linear_coef)
+                                grid[m].d_ruyten_linear_coef,
+                                grid[m].flip_factor)
                 elif self.particle_shape == 'cubic':
                     if Nm == 2:
                         deposit_J_gpu_cubic[
@@ -966,7 +972,8 @@ class Particles(object) :
                             grid[0].Jz, grid[1].Jz,
                             self.cell_idx, self.prefix_sum,
                             grid[0].d_ruyten_cubic_coef,
-                            grid[1].d_ruyten_cubic_coef)
+                            grid[1].d_ruyten_cubic_coef,
+                            grid[0].flip_factor)
                     else:
                         for m in range(Nm):
                             deposit_J_gpu_cubic_one_mode[
@@ -977,7 +984,8 @@ class Particles(object) :
                                 grid[m].invdr, grid[m].rmin, grid[m].Nr,
                                 grid[m].Jr, grid[m].Jt, grid[m].Jz, m,
                                 self.cell_idx, self.prefix_sum,
-                                grid[m].d_ruyten_cubic_coef)
+                                grid[m].d_ruyten_cubic_coef,
+                                grid[m].flip_factor)
 
         # CPU version
         else:
@@ -996,7 +1004,8 @@ class Particles(object) :
                         grid[0].invdr, grid[0].rmin, grid[0].Nr,
                         fld.rho_global, fld.Nm,
                         nthreads, ptcl_chunk_indices,
-                        grid[0].ruyten_linear_coef )
+                        grid[0].ruyten_linear_coef,
+                        grid[0].flip_factor )
                 elif self.particle_shape == 'cubic':
                     deposit_rho_numba_cubic(
                         self.x, self.y, self.z, weight, self.q,
@@ -1004,7 +1013,8 @@ class Particles(object) :
                         grid[0].invdr, grid[0].rmin, grid[0].Nr,
                         fld.rho_global, fld.Nm,
                         nthreads, ptcl_chunk_indices,
-                        grid[0].ruyten_cubic_coef )
+                        grid[0].ruyten_cubic_coef,
+                        grid[0].flip_factor  )
 
             elif fieldtype == 'J':
                 # Deposit J using CPU threading
@@ -1016,7 +1026,8 @@ class Particles(object) :
                         grid[0].invdr, grid[0].rmin, grid[0].Nr,
                         fld.Jr_global, fld.Jt_global, fld.Jz_global, fld.Nm,
                         nthreads, ptcl_chunk_indices,
-                        grid[0].ruyten_linear_coef )
+                        grid[0].ruyten_linear_coef,
+                        grid[0].flip_factor  )
                 elif self.particle_shape == 'cubic':
                     deposit_J_numba_cubic(
                         self.x, self.y, self.z, weight, self.q,
@@ -1025,7 +1036,8 @@ class Particles(object) :
                         grid[0].invdr, grid[0].rmin, grid[0].Nr,
                         fld.Jr_global, fld.Jt_global, fld.Jz_global, fld.Nm,
                         nthreads, ptcl_chunk_indices,
-                        grid[0].ruyten_cubic_coef )
+                        grid[0].ruyten_cubic_coef,
+                        grid[0].flip_factor  )
 
 
     def sort_particles(self, fld):

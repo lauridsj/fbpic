@@ -52,7 +52,8 @@ class Fields(object) :
                   current_correction='cross-deposition', use_cuda=False,
                   smoother=None, create_threading_buffers=False,
                   use_ruyten_shapes='all',
-                  use_modified_volume='all' ):
+                  use_modified_volume='all',
+                  use_true_sign=True ):
         """
         Initialize the components of the Fields object
 
@@ -171,7 +172,8 @@ class Fields(object) :
                 Nz, Nr, m, zmin, zmax, rmax,
                 use_pml=use_pml, use_cuda=self.use_cuda,
                 use_ruyten_shapes=ruyten_shapes,
-                use_modified_volume=mod_volume ) )
+                use_modified_volume=mod_volume,
+                use_true_sign=use_true_sign ) )
 
         # Get the kz and (finite-order) modified kz arrays
         # (According to FFT conventions, the kz array starts with

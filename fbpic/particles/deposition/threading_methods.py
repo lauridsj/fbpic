@@ -30,7 +30,7 @@ def deposit_rho_numba_linear(x, y, z, w, q,
                            invdr, rmin, Nr,
                            rho_global, Nm,
                            nthreads, ptcl_chunk_indices,
-                           beta_n):
+                           beta_n, flip_factor):
     """
     Deposition of the charge density rho using numba prange on the CPU.
     Iterates over the threads in parallel, while each thread iterates
@@ -134,10 +134,12 @@ def deposit_rho_numba_linear(x, y, z, w, q,
 
             # Add contribution of this particle to the global array
             for m in range(Nm):
-                rho_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, (-1)**m, bn) * rho_scal[m]
-                rho_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, (-1)**m, bn) * rho_scal[m]
-                rho_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, (-1)**m, bn) * rho_scal[m]
-                rho_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, (-1)**m, bn) * rho_scal[m]
+                f = (-1)**m if flip_factor == 1 else -1
+
+                rho_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, f, bn) * rho_scal[m]
+                rho_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, f, bn) * rho_scal[m]
+                rho_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, f, bn) * rho_scal[m]
+                rho_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, f, bn) * rho_scal[m]
 
     return
 
@@ -152,7 +154,7 @@ def deposit_J_numba_linear(x, y, z, w, q,
                          invdr, rmin, Nr,
                          j_r_global, j_t_global, j_z_global, Nm,
                          nthreads, ptcl_chunk_indices,
-                         beta_n):
+                         beta_n, flip_factor):
     """
     Deposition of the current density J using numba prange on the CPU.
     Iterates over the threads in parallel, while each thread iterates
@@ -274,20 +276,23 @@ def deposit_J_numba_linear(x, y, z, w, q,
 
             # Add contribution of this particle to the global array
             for m in range(Nm):
-                j_r_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, -(-1)**m, bn) * jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, -(-1)**m, bn) * jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, -(-1)**m, bn) * jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, -(-1)**m, bn) * jr_scal[m]
+                f1 = (-1)**m if flip_factor == 1 else -1
+                f2 = -(-1)**m if flip_factor == 1 else -1
 
-                j_t_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, -(-1)**m, bn) * jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, -(-1)**m, bn) * jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, -(-1)**m, bn) * jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, -(-1)**m, bn) * jt_scal[m]
+                j_r_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, f2, bn) * jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, f2, bn) * jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, f2, bn) * jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, f2, bn) * jr_scal[m]
 
-                j_z_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, (-1)**m, bn) * jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, (-1)**m, bn) * jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, (-1)**m, bn) * jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, (-1)**m, bn) * jz_scal[m]
+                j_t_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, f2, bn) * jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, f2, bn) * jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, f2, bn) * jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, f2, bn) * jt_scal[m]
+
+                j_z_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 0, f1, bn) * jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_linear(z_cell, 0)*Sr_linear(r_cell, 1, f1, bn) * jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 0, f1, bn) * jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_linear(z_cell, 1)*Sr_linear(r_cell, 1, f1, bn) * jz_scal[m]
 
 
     return
@@ -303,7 +308,7 @@ def deposit_rho_numba_cubic(x, y, z, w, q,
                           invdr, rmin, Nr,
                           rho_global, Nm,
                           nthreads, ptcl_chunk_indices,
-                          beta_n):
+                          beta_n, flip_factor):
     """
     Deposition of the charge density rho using numba prange on the CPU.
     Iterates over the threads in parallel, while each thread iterates
@@ -407,25 +412,27 @@ def deposit_rho_numba_cubic(x, y, z, w, q,
 
             # Add contribution of this particle to the global array
             for m in range(Nm):
-                rho_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, (-1)**m, bn)*rho_scal[m]
+                f = (-1)**m if flip_factor == 1 else -1
 
-                rho_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, (-1)**m, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, f, bn)*rho_scal[m]
 
-                rho_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, (-1)**m, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, f, bn)*rho_scal[m]
 
-                rho_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, (-1)**m, bn)*rho_scal[m]
-                rho_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, (-1)**m, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, f, bn)*rho_scal[m]
+
+                rho_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, f, bn)*rho_scal[m]
+                rho_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, f, bn)*rho_scal[m]
 
     return
 
@@ -440,7 +447,7 @@ def deposit_J_numba_cubic(x, y, z, w, q,
                         invdr, rmin, Nr,
                         j_r_global, j_t_global, j_z_global, Nm,
                         nthreads, ptcl_chunk_indices,
-                        beta_n ):
+                        beta_n, flip_factor ):
     """
     Deposition of the current density J using numba prange on the CPU.
     Iterates over the threads in parallel, while each thread iterates
@@ -559,68 +566,71 @@ def deposit_J_numba_cubic(x, y, z, w, q,
             if ir < 0:
                 bn = 0
             else:
-                bn = beta_n[ir]
+                bn = beta_n[ir]         
 
             # Add contribution of this particle to the global array
             for m in range(Nm):
-                j_r_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jr_scal[m]
+                f1 = (-1)**m if flip_factor == 1 else -1
+                f2 = -(-1)**m if flip_factor == 1 else -1
 
-                j_r_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, f2, bn)*jr_scal[m]
 
-                j_r_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, f2, bn)*jr_scal[m]
 
-                j_r_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jr_scal[m]
-                j_r_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, f2, bn)*jr_scal[m]
 
-                j_t_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jt_scal[m]
+                j_r_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, f2, bn)*jr_scal[m]
+                j_r_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, f2, bn)*jr_scal[m]
 
-                j_t_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, f2, bn)*jt_scal[m]
 
-                j_t_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, f2, bn)*jt_scal[m]
 
-                j_t_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, -(-1)**m, bn)*jt_scal[m]
-                j_t_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, -(-1)**m, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, f2, bn)*jt_scal[m]
 
-                j_z_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, (-1)**m, bn)*jz_scal[m]
+                j_t_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, f2, bn)*jt_scal[m]
+                j_t_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, f2, bn)*jt_scal[m]
 
-                j_z_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, (-1)**m, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+0,ir_cell+0] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 0, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+0,ir_cell+1] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 1, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+0,ir_cell+2] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 2, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+0,ir_cell+3] += Sz_cubic(z_cell, 0)*Sr_cubic(r_cell, 3, f1, bn)*jz_scal[m]
 
-                j_z_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, (-1)**m, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+1,ir_cell+0] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 0, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+1,ir_cell+1] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 1, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+1,ir_cell+2] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 2, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+1,ir_cell+3] += Sz_cubic(z_cell, 1)*Sr_cubic(r_cell, 3, f1, bn)*jz_scal[m]
 
-                j_z_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, (-1)**m, bn)*jz_scal[m]
-                j_z_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, (-1)**m, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+2,ir_cell+0] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 0, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+2,ir_cell+1] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 1, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+2,ir_cell+2] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 2, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+2,ir_cell+3] += Sz_cubic(z_cell, 2)*Sr_cubic(r_cell, 3, f1, bn)*jz_scal[m]
+
+                j_z_global[i_thread,m,iz_cell+3,ir_cell+0] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 0, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+3,ir_cell+1] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 1, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+3,ir_cell+2] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 2, f1, bn)*jz_scal[m]
+                j_z_global[i_thread,m,iz_cell+3,ir_cell+3] += Sz_cubic(z_cell, 3)*Sr_cubic(r_cell, 3, f1, bn)*jz_scal[m]
 
     return
