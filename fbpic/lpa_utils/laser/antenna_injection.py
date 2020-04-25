@@ -396,8 +396,10 @@ class LaserAntenna( object ):
                 # Deposit the fields into small-size buffer arrays
                 # (The sign -1 with which the guards are added is not
                 # trivial to derive but avoids artifacts on the axis)
+                f = (-1)**m if grid[m].flip_factor == 1 else -1
+
                 deposit_field_numba( w*exptheta, self.rho_buffer[m,:],
-                    iz, ir, Sz, Sr, (-1)**m )
+                    iz, ir, Sz, Sr,  f)
 
         elif fieldtype == 'J' :
             # ----------------------------------------
@@ -417,15 +419,18 @@ class LaserAntenna( object ):
                     exptheta[:].imag = sin
                 elif m>1 :
                     exptheta[:] = exptheta*( cos + 1.j*sin )
+
+                f1 = (-1)**m if grid[m].flip_factor == 1 else -1
+                f2 = -(-1)**m if grid[m].flip_factor == 1 else -1
                 # Deposit the fields into small-size buffer arrays
                 # (The sign -1 with which the guards are added is not
                 # trivial to derive but avoids artifacts on the axis)
                 deposit_field_numba( Jr*exptheta, self.Jr_buffer[m,:],
-                                     iz, ir, Sz, Sr, -(-1)**m )
+                                     iz, ir, Sz, Sr, f2 )
                 deposit_field_numba( Jt*exptheta, self.Jt_buffer[m,:],
-                                     iz, ir, Sz, Sr, -(-1)**m )
+                                     iz, ir, Sz, Sr, f2 )
                 deposit_field_numba( Jz*exptheta, self.Jz_buffer[m,:],
-                                     iz, ir, Sz, Sr, (-1)**m )
+                                     iz, ir, Sz, Sr, f1 )
 
     def copy_rho_buffer( self, iz_min, grid ):
         """
