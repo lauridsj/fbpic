@@ -374,11 +374,6 @@ class LaserAntenna( object ):
         cos = np.where( r!=0., x*invr, 1. )
         sin = np.where( r!=0., y*invr, 0. )
 
-        # Indices and weights in r
-        ir, Sr = weights(r, grid[0].invdr, grid[0].rmin, grid[0].Nr,
-                         direction='r', shape_order=1,
-                         beta_n=grid[0].ruyten_linear_coef)
-
         if fieldtype == 'rho' :
             # ---------------------------------------
             # Deposit the charge density mode by mode
@@ -387,6 +382,12 @@ class LaserAntenna( object ):
             exptheta = np.ones( self.Ntot, dtype='complex')
             # exptheta takes the value exp(im theta) throughout the loop
             for m in range( len(grid) ) :
+
+                # Indices and weights in r
+                ir, Sr = weights(r, grid[m].invdr, grid[m].rmin, grid[m].Nr,
+                         direction='r', shape_order=1,
+                         beta_n=grid[m].ruyten_linear_coef)
+
                 # Increment exptheta (notice the + : forward transform)
                 if m==1 :
                     exptheta[:].real = cos
@@ -396,7 +397,8 @@ class LaserAntenna( object ):
                 # Deposit the fields into small-size buffer arrays
                 # (The sign -1 with which the guards are added is not
                 # trivial to derive but avoids artifacts on the axis)
-                f = (-1)**m if grid[m].flip_factor == 1 else -1
+                #f = (-1)**m if grid[m].flip_factor == 1 else -1
+                f = -1
 
                 deposit_field_numba( w*exptheta, self.rho_buffer[m,:],
                     iz, ir, Sz, Sr,  f)
@@ -413,6 +415,12 @@ class LaserAntenna( object ):
             exptheta = np.ones( self.Ntot, dtype='complex')
             # exptheta takes the value exp(im theta) throughout the loop
             for m in range( len(grid) ) :
+
+                # Indices and weights in r
+                ir, Sr = weights(r, grid[m].invdr, grid[m].rmin, grid[m].Nr,
+                         direction='r', shape_order=1,
+                         beta_n=grid[m].ruyten_linear_coef)
+                         
                 # Increment exptheta (notice the + : forward transform)
                 if m==1 :
                     exptheta[:].real = cos
@@ -420,8 +428,11 @@ class LaserAntenna( object ):
                 elif m>1 :
                     exptheta[:] = exptheta*( cos + 1.j*sin )
 
-                f1 = (-1)**m if grid[m].flip_factor == 1 else -1
-                f2 = -(-1)**m if grid[m].flip_factor == 1 else -1
+                #f1 = (-1)**m if grid[m].flip_factor == 1 else -1
+                #f2 = -(-1)**m if grid[m].flip_factor == 1 else -1
+                f1 = -1
+                f2 = -1
+
                 # Deposit the fields into small-size buffer arrays
                 # (The sign -1 with which the guards are added is not
                 # trivial to derive but avoids artifacts on the axis)
