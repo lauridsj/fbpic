@@ -58,8 +58,8 @@ class Simulation(object):
                  boundaries={'z':'periodic', 'r':'reflective'},
                  gamma_boost=None, use_all_mpi_ranks=True,
                  particle_shape='linear', verbose_level=1,
-                 smoother=None, use_ruyten_shapes='all',
-                 use_modified_volume='all', use_true_sign=True ):
+                 smoother=None, use_ruyten_shapes='mode_0',
+                 use_modified_volume='mode_0', use_true_sign=True ):
         """
         Initializes a simulation.
 
